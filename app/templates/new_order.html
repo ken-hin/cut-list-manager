@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}New order{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+  <h1 class="page-title">New order</h1>
+  <p class="mt-2 text-2nd">Pick the customer and pickup day. You'll add the items on the next screen.</p>
+</div>
+
+{% set mode = form.get('customer_mode', 'existing') %}
+
+<form method="post" class="panel max-w-3xl space-y-6 p-6">
+
+  <section class="space-y-4">
+    <h2 class="section-title">Customer</h2>
+    <div class="flex flex-wrap gap-6">
+      <label class="flex cursor-pointer items-center gap-2">
+        <input type="radio" name="customer_mode" value="existing" class="radio radio-sm radio-primary"
+               {{ 'checked' if mode == 'existing' }} onchange="showCustomerFields()">
+        <span>Existing customer</span>
+      </label>
+      <label class="flex cursor-pointer items-center gap-2">
+        <input type="radio" name="customer_mode" value="new" class="radio radio-sm radio-primary"
+               {{ 'checked' if mode == 'new' }} onchange="showCustomerFields()">
+        <span>New customer</span>
+      </label>
+    </div>
+
+    <div id="existing-customer" class="{{ 'hidden' if mode == 'new' }}">
+      <label class="block">
+        <span class="label-sm mb-1 block">Customer</span>
+        <select name="customer_id" class="select w-full">
+          <option value="">Choose a customer…</option>
+          {% for c in customers %}
+            <option value="{{ c.customer_id }}" {{ 'selected' if c.customer_id|string == selected_customer|string }}>
+              {{ c.name }}{% if c.phone %} · {{ c.phone | phone }}{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+
+    <div id="new-customer" class="{{ 'hidden' if mode != 'new' }}">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="block">
+          <span class="label-sm mb-1 block">Name *</span>
+          <input name="name" value="{{ form.get('name', '') }}" class="input w-full">
+        </label>
+        <label class="block">
+          <span class="label-sm mb-1 block">Phone</span>
+          <input name="phone" value="{{ form.get('phone', '') }}" placeholder="865-555-0100"
+                 inputmode="tel" class="input w-full">
+        </label>
+        <label class="block">
+          <span class="label-sm mb-1 block">Second contact name</span>
+          <input name="alt_name" value="{{ form.get('alt_name', '') }}" class="input w-full">
+        </label>
+        <label class="block">
+          <span class="label-sm mb-1 block">Second contact phone</span>
+          <input name="alt_phone" value="{{ form.get('alt_phone', '') }}" inputmode="tel" class="input w-full">
+        </label>
+        <label class="block sm:col-span-2">
+          <span class="label-sm mb-1 block">Customer notes</span>
+          <input name="customer_notes" value="{{ form.get('customer_notes', '') }}"
+                 placeholder="e.g., Always wants the chuck end" class="input w-full">
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section class="hairline-t space-y-4 pt-6">
+    <h2 class="section-title">Pickup</h2>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <label class="block">
+        <span class="label-sm mb-1 block">Pickup day *</span>
+        <input type="date" name="pickup_date" value="{{ form.get('pickup_date', '') }}" class="input w-full">
+      </label>
+      <label class="block">
+        <span class="label-sm mb-1 block">Order notes</span>
+        <input name="notes" value="{{ form.get('notes', '') }}" placeholder="e.g., Paid $50 deposit"
+               class="input w-full">
+      </label>
+    </div>
+  </section>
+
+  <div class="flex justify-end">
+    <button class="btn btn-primary">Create order</button>
+  </div>
+</form>
+
+<script>
+  // Show either the existing-customer picker or the new-customer fields.
+  function showCustomerFields() {
+    const isNew = document.querySelector('input[name=customer_mode]:checked').value === 'new';
+    document.getElementById('new-customer').classList.toggle('hidden', !isNew);
+    document.getElementById('existing-customer').classList.toggle('hidden', isNew);
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Customers{% endblock %}
+{% block content %}
+
+<h1 class="page-title mb-6">Customers</h1>
+
+<form method="get" class="mb-6 flex max-w-2xl gap-2">
+  <label class="input w-full">
+    <span class="text-muted">{{ ui.icon('search') }}</span>
+    <input type="search" name="q" value="{{ search_text }}" placeholder="Name or phone number"
+           aria-label="Search customers" class="grow" autofocus>
+  </label>
+  <button class="btn btn-primary">Search</button>
+</form>
+
+<div class="panel overflow-hidden">
+  {% if results %}
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead>
+          <tr class="label-sm">
+            <th class="font-normal">Name</th>
+            <th class="font-normal">Phone</th>
+            <th class="hidden font-normal sm:table-cell">Second contact</th>
+            <th class="text-right font-normal">Orders</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for customer in results %}
+            <tr class="customer-row">
+              <td class="font-medium">{{ customer.name }}</td>
+              <td class="figures whitespace-nowrap">{{ customer.phone | phone or '—' }}</td>
+              <td class="hidden text-2nd figures sm:table-cell">
+                {% if customer.alt_name or customer.alt_phone %}
+                  {{ customer.alt_name or '' }} {{ customer.alt_phone | phone }}
+                {% else %}—{% endif %}
+              </td>
+              <td class="mono figures text-right">{{ customer.order_count }}</td>
+              <td class="text-right">
+                <a href="{{ url_for('customer_page', customer_id=customer.customer_id) }}" class="btn btn-sm btn-ghost">View</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="p-6 text-2nd">No customers match "{{ search_text }}".
+      <a href="{{ url_for('new_order_page') }}" class="underline">Start a new order</a> to add one.</p>
+  {% endif %}
+</div>
+{% endblock %}

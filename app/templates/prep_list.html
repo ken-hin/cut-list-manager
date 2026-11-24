@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Prep list{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+  <h1 class="page-title">Prep list</h1>
+  <p class="mt-2 text-2nd figures">
+    {{ pickup | nice_date }} · {{ orders | length | counted('order') }} ·
+    <span class="font-medium">{{ items_left | counted('item') }} left to cut</span>
+  </p>
+</div>
+
+<!-- Filters: GET form, so the filters stay in the address bar -->
+<form method="get" class="panel mb-8 grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
+  <label class="block">
+    <span class="label-sm mb-1 block">Pickup day</span>
+    <select name="date" class="select w-full">
+      {% for d in dates %}
+        <option value="{{ d.isoformat() }}" {{ 'selected' if d == pickup }}>{{ d | nice_date }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="block">
+    <span class="label-sm mb-1 block">Category</span>
+    <select name="category" class="select w-full">
+      <option value="">All categories</option>
+      {% for c in categories %}
+        <option value="{{ c }}" {{ 'selected' if c == category }}>{{ CATEGORY_NAMES[c] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="block">
+    <span class="label-sm mb-1 block">Customer</span>
+    <input type="text" name="customer" value="{{ customer_search }}" placeholder="Name" class="input w-full">
+  </label>
+  <div class="flex gap-2">
+    <button class="btn btn-primary flex-1">Show</button>
+    <a href="{{ url_for('prep_list_page', date=pickup.isoformat()) }}" class="btn btn-ghost">Clear</a>
+  </div>
+</form>
+
+{% if not orders %}
+  <p class="panel p-6 text-2nd">No orders match for this day</p>
+{% endif %}
+
+<!-- One ticket per order -->
+<div class="grid items-start gap-4 md:grid-cols-2">
+  {% for order in orders %}
+    {% set order_items = items_by_order.get(order.order_id, []) %}
+    <article class="panel">
+      <header class="flex items-start justify-between gap-4 px-5 pt-5 pb-4">
+        <div class="min-w-0">
+          {{ ui.ticket_no(order.order_id) }}
+          <h2 class="section-title mt-1">
+            <a href="{{ url_for('order_page', order_id=order.order_id) }}" class="hover:underline">{{ order.name }}</a>
+          </h2>
+          <p class="label-sm figures mt-1">
+            {{ order.phone | phone or 'No phone' }}
+            {% if order.alt_name %} · {{ order.alt_name }} {{ order.alt_phone | phone }}{% endif %}
+          </p>
+        </div>
+        {{ ui.order_status(order) }}
+      </header>
+
+      {% if order.notes %}<p class="note mx-5 mb-4">{{ order.notes }}</p>{% endif %}
+
+      <ul class="perforation rows px-5">
+        {% for item in order_items %}
+          <li class="flex items-start gap-4 py-3">
+            <!-- The view's `ready` column is the item's is_done flag -->
+            <form method="post" action="{{ url_for('mark_item_done', item_id=item.item_id) }}" class="shrink-0">
+              <input type="hidden" name="next" value="{{ request.full_path }}">
+              {% if item.ready %}
+                <button class="btn btn-sm btn-ghost w-24 text-2nd" title="Mark as not cut">{{ ui.icon('check') }} Cut</button>
+              {% else %}
+                <input type="hidden" name="done" value="1">
+                <button class="btn btn-sm btn-quiet w-24">Mark cut</button>
+              {% endif %}
+            </form>
+
+            <div class="min-w-0 flex-1 {{ 'opacity-50 line-through' if item.ready }}">
+              <div class="font-medium figures">
+                {{ item.qty }} × {{ item.item_name }}
+                {% if GRADE_NAMES[item.grade] %}<span class="label-sm font-normal"> · {{ GRADE_NAMES[item.grade] }}</span>{% endif %}
+              </div>
+              {% set details = [] %}
+              {% if item.loin_end and item.loin_end != 'none' %}{% set _ = details.append(END_PREFERENCES[item.loin_end]) %}{% endif %}
+              {% if item.cut_specs %}{% set _ = details.append(CUT_STYLES[item.cut_specs]) %}{% endif %}
+              {% if item.grind_trimmings %}{% set _ = details.append('Grind trim') %}{% endif %}
+              {% if item.nuts %}{% set _ = details.append(NUT_OPTIONS[item.nuts]) %}{% endif %}
+              {% if item.lbs %}{% set _ = details.append(item.lbs ~ ' lb each') %}{% endif %}
+              {% if item.in_thick %}{% set _ = details.append(item.in_thick ~ '" thick') %}{% endif %}
+              {% if details %}<div class="label-sm figures mt-1">{{ details | join(' · ') }}</div>{% endif %}
+              {% if item.notes %}<p class="note mt-2">{{ item.notes }}</p>{% endif %}
+            </div>
+
+            {% if item.bones %}
+              <!-- Bone count: the number the cutter needs at a glance -->
+              <div class="shrink-0 text-right {{ 'opacity-50' if item.ready }}">
+                <div class="mono figures text-ink text-xl leading-6">{{ item.bones }}</div>
+                <div class="ticket-no">bones</div>
+              </div>
+            {% endif %}
+          </li>
+        {% else %}
+          <li class="py-3 label-sm">No items on this order yet</li>
+        {% endfor %}
+      </ul>
+
+      <footer class="hairline-t flex flex-wrap justify-end gap-2 px-5 py-4">
+        <a href="{{ url_for('order_page', order_id=order.order_id) }}" class="btn btn-sm btn-ghost">Open order</a>
+        <form method="post" action="{{ url_for('mark_order_ready', order_id=order.order_id) }}">
+          <input type="hidden" name="next" value="{{ request.full_path }}">
+          {% if not order.is_ready %}<input type="hidden" name="ready" value="1">{% endif %}
+          <button class="btn btn-sm btn-quiet" {{ 'disabled' if order.is_picked_up }}>
+            {{ 'Mark not ready' if order.is_ready else 'Mark ready' }}
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('mark_order_picked_up', order_id=order.order_id) }}">
+          <input type="hidden" name="next" value="{{ request.full_path }}">
+          {% if not order.is_picked_up %}<input type="hidden" name="picked_up" value="1">{% endif %}
+          <button class="btn btn-sm btn-quiet">
+            {{ 'Undo pickup' if order.is_picked_up else 'Picked up' }}
+          </button>
+        </form>
+      </footer>
+    </article>
+  {% endfor %}
+</div>
+{% endblock %}

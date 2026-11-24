@@ -1,0 +1,30 @@
+{# Small pieces shared by the pages. Import with:
+   {% import "_ui.html" as ui %} #}
+
+{# An order's status as a dot and a word #}
+{% macro order_status(order) -%}
+  {% if order.is_picked_up %}<span class="state state-done">Picked up</span>
+  {%- elif order.is_ready %}<span class="state state-ready">Ready</span>
+  {%- else %}<span class="state state-waiting">Not ready</span>{% endif %}
+{%- endmacro %}
+
+{# An item's cut status #}
+{% macro item_status(is_done) -%}
+  {% if is_done %}<span class="state state-ready">Cut</span>
+  {%- else %}<span class="state">Not cut</span>{% endif %}
+{%- endmacro %}
+
+{# Every order carries its ticket number, like a deli ticket #}
+{% macro ticket_no(order_id) -%}
+  <span class="ticket-no">No. {{ '%03d' % order_id }}</span>
+{%- endmacro %}
+
+{# Line icons from lucide (lucide.dev), 16px, 1.5 stroke #}
+{% macro icon(name) -%}
+  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+    {%- if name == 'check' %}<path d="M20 6 9 17l-5-5"/>
+    {%- elif name == 'search' %}<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+    {%- elif name == 'chevron-down' %}<path d="m6 9 6 6 6-6"/>
+    {%- endif %}
+  </svg>
+{%- endmacro %}

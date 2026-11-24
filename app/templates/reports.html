@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{# One product line: name, how much is ordered, and a stock bar when the shop
+   tracks stock on it. `unit` is '' for plain counts, or ' bones'. #}
+{% macro stock_row(name, ordered, limit, unit, detail='') %}
+  <li class="py-3">
+    <div class="flex items-baseline justify-between gap-4">
+      <span class="min-w-0">{{ name }}{% if detail %}<span class="label-sm"> · {{ detail }}</span>{% endif %}</span>
+      <span class="mono figures shrink-0 text-sm">
+        {% if limit is none %}
+          {{ ordered }}{{ unit }} <span class="text-muted">· not tracked</span>
+        {% elif ordered >= limit %}
+          <span class="state state-error">Sold out · {{ ordered }} of {{ limit }}{{ unit }}</span>
+        {% else %}
+          {{ ordered }} of {{ limit }}{{ unit }} <span class="text-muted">· {{ limit - ordered }} left</span>
+        {% endif %}
+      </span>
+    </div>
+    {% if limit is not none %}
+      {% set percent = 100 if limit == 0 else [(ordered * 100 / limit) | round | int, 100] | min %}
+      <div class="meter mt-2 {{ 'is-full' if ordered >= limit }}"><span style="width: {{ percent }}%"></span></div>
+    {% endif %}
+  </li>
+{% endmacro %}
+
+{% block content %}
+
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="page-title">Reports</h1>
+    <p class="mt-2 text-2nd">{{ year }} season</p>
+  </div>
+  <form method="get" class="flex gap-2">
+    <select name="year" class="select select-sm w-28" aria-label="Season">
+      {% for s in seasons %}<option value="{{ s }}" {{ 'selected' if s == year }}>{{ s }}</option>{% endfor %}
+    </select>
+    <button class="btn btn-sm btn-quiet">Show</button>
+  </form>
+</div>
+
+<!-- Rib roasts per pickup day -->
+<section>
+  <h2 class="section-title mb-3">Rib roasts by pickup day</h2>
+  {% if rib_by_day %}
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {% for row in rib_by_day %}
+        {% set day = season_day(year, row) %}
+        <a href="{{ url_for('prep_list_page', date=day.isoformat(), category='rib_roast') }}"
+           class="panel panel-link block p-5">
+          <div class="label-sm">{{ day | short_date }}</div>
+          <div class="mt-3 flex items-baseline gap-2">
+            <span class="mono figures text-ink text-3xl leading-none">{{ row.total_bones }}</span>
+            <span class="text-2nd">bones</span>
+          </div>
+          <div class="label-sm figures mt-3">
+            {{ row.rib_roasts | counted('roast') }} · {{ row.roasts_cut }} cut
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="panel p-6 text-2nd">No rib roasts this season</p>
+  {% endif %}
+</section>
+
+<div class="mt-10 grid items-start gap-6 lg:grid-cols-5">
+
+  <!-- Orders with items left to cut -->
+  <section class="panel lg:col-span-2">
+    <h2 class="section-title px-5 pt-5 pb-3">Left to cut</h2>
+    <ul class="rows hairline-t px-5">
+      {% for row in work_left %}
+        <li class="flex items-center justify-between gap-4 py-3">
+          <div class="min-w-0">
+            <div class="font-medium">{{ row.name }}</div>
+            <div class="label-sm figures">{{ season_day(year, row) | short_date }} · {{ row.items_done }} of {{ row.items_on_order }} done</div>
+          </div>
+          <a class="btn btn-sm btn-ghost" href="{{ url_for('order_page', order_id=row.order_id) }}">Open</a>
+        </li>
+      {% else %}
+        <li class="py-3 text-2nd">Everything's cut</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- Product totals and stock -->
+  <section class="panel lg:col-span-3">
+    <div class="px-5 pt-5 pb-3">
+      <h2 class="section-title">What's been ordered</h2>
+      <p class="label-sm mt-1">Totals for the season, against stock where the shop tracks it. Rib roasts are counted in bones.</p>
+    </div>
+    <ul class="rows hairline-t px-5">
+      {% for row in rib_stock %}
+        {{ stock_row(row.product_name ~ ' (' ~ GRADE_NAMES[row.grade] ~ ')', row.bones_ordered, row.stock_limit,
+                     ' bones', row.rib_roasts | counted('roast')) }}
+      {% endfor %}
+      {% for row in product_totals %}
+        {% set name = row.product_name ~ (' (' ~ GRADE_NAMES[row.grade] ~ ')' if GRADE_NAMES[row.grade] else '')
+                      ~ (' (frozen)' if row.is_frozen else '') %}
+        {{ stock_row(name, row.units_ordered, row.stock_limit, '') }}
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+
+<!-- Returning customers -->
+<section class="panel mt-10">
+  <div class="px-5 pt-5 pb-3">
+    <h2 class="section-title">Ordered in {{ year - 1 }}, not yet in {{ year }}</h2>
+    <p class="label-sm mt-1">Worth a call to see if they want their usual</p>
+  </div>
+  <ul class="rows hairline-t px-5">
+    {% for row in returning %}
+      <li class="flex flex-wrap items-center justify-between gap-4 py-3">
+        <div>
+          <div class="font-medium">{{ row.name }}</div>
+          <div class="label-sm figures">{{ (row.phone or row.alt_phone) | phone or 'No phone' }}</div>
+        </div>
+        <div class="flex gap-2">
+          <a class="btn btn-sm btn-ghost" href="{{ url_for('customer_page', customer_id=row.customer_id) }}">History</a>
+          <a class="btn btn-sm btn-quiet" href="{{ url_for('new_order_page', customer_id=row.customer_id) }}">New order</a>
+        </div>
+      </li>
+    {% else %}
+      <li class="py-3 text-2nd">Everyone from {{ year - 1 }} has ordered already</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

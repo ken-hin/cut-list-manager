@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" data-theme="cutlist">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Cut list{% endblock %} · Jesse's Butcher Shop</title>
+  <!-- DaisyUI components and Tailwind from a CDN (no build step), pinned to
+       exact versions so the look can't change under us. static/cutlist.css
+       sets the shop's colors and type; light/dark follow the device. -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5.7.50/daisyui.css" rel="stylesheet" type="text/css">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="{{ url_for('static', filename='cutlist.css') }}" rel="stylesheet">
+</head>
+<body class="min-h-screen">
+
+  {% set nav_links = [
+    ("prep_list_page", "Prep list"),
+    ("customers_page", "Customers"),
+    ("new_order_page", "New order"),
+    ("reports_page", "Reports"),
+  ] %}
+
+  <header class="bg-card hairline-b">
+    <nav class="max-w-7xl mx-auto flex h-16 items-center justify-between gap-4 px-4 sm:px-6" aria-label="Main">
+      <a href="{{ url_for('home') }}" class="flex items-baseline gap-2">
+        <span class="text-base font-semibold">Jesse's Butcher Shop</span>
+        <span class="label-sm hidden sm:inline">Cut list</span>
+      </a>
+      <!-- Full menu on wider screens -->
+      <ul class="hidden md:flex items-center gap-1">
+        {% for endpoint, label in nav_links %}
+          <li><a href="{{ url_for(endpoint) }}" class="nav-link"
+                 {% if request.endpoint == endpoint %}aria-current="page"{% endif %}>{{ label }}</a></li>
+        {% endfor %}
+      </ul>
+      <!-- Dropdown menu on phones -->
+      <div class="dropdown dropdown-end md:hidden">
+        <div tabindex="0" role="button" class="btn btn-sm btn-quiet">Menu</div>
+        <ul tabindex="0" class="dropdown-content panel z-10 mt-2 w-48 p-2">
+          {% for endpoint, label in nav_links %}
+            <li><a href="{{ url_for(endpoint) }}" class="nav-link w-full"
+                   {% if request.endpoint == endpoint %}aria-current="page"{% endif %}>{{ label }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8 sm:px-6">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for kind, message in messages %}
+            <div role="alert" class="panel flash {{ 'flash-error' if kind == 'error' }}">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

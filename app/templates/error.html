@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Error{% endblock %}
+{% block content %}
+<section class="panel max-w-2xl p-6">
+  <h1 class="section-title">{{ message }}</h1>
+  {% if detail %}<p class="mt-2 text-2nd">{{ detail }}</p>{% endif %}
+  <a href="{{ url_for('home') }}" class="btn btn-quiet mt-6">Back to the prep list</a>
+</section>
+{% endblock %}
