@@ -26,7 +26,7 @@ Kenneth Hinman
 ## Folder layout
 
 ```
-finalProject/
+cut-list-manager/
 ├── README.md           this file
 ├── schema.sql          database tables, indexes and view
 ├── insert_data.sql     sample data
@@ -54,7 +54,7 @@ Linux, install it from https://sqlite.org/download.html or your package
 manager). `queries.sql` uses sqlite3 dot-commands (`.mode`, `.print`), so run it
 with the `sqlite3` CLI rather than a GUI tool.
 
-From the `finalProject` folder, run the files in this order:
+From the `cut-list-manager` folder, run the files in this order:
 
 1. `schema.sql`: creates the tables, indexes and view
 2. `insert_data.sql`: loads the sample data
@@ -73,7 +73,7 @@ sqlite3 xmas_orders.db < transaction.sql
 
 ## Application Setup
 
-Open a terminal in the `finalProject` folder. Step 1 moves into the `app`
+Open a terminal in the `cut-list-manager` folder. Step 1 moves into the `app`
 folder, and **every command after that is run from `app`**.
 
 1. **Install Flask** (the virtual environment is optional but keeps things clean):
@@ -86,16 +86,16 @@ folder, and **every command after that is run from `app`**.
    ```
 
 2. **Create the database.** This builds a fresh `xmas_orders.db` in the
-   `finalProject` folder from `schema.sql` and `insert_data.sql`:
+   `cut-list-manager` folder from `schema.sql` and `insert_data.sql`:
 
    ```bash
    flask --app app init-db
    ```
 
    Running it again resets the sample data. (`bash run_queries.sh`, run from
-   the `finalProject` folder, creates the same file.)
+   the `cut-list-manager` folder, creates the same file.)
 
-3. **Database connection.** By default the app uses `finalProject/xmas_orders.db`.
+3. **Database connection.** By default the app uses `cut-list-manager/xmas_orders.db`.
    To use a different file, set the `CUTLIST_DB` environment variable to its
    path before starting the app. SQLite needs no passwords or credentials.
    If the database file is missing or empty, every page says so and shows
